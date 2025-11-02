@@ -1,6 +1,144 @@
-# Xlack
+# Xlack Technical Documentation
 
-Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, Inertia.js, MariaDB, Redis, and WebSockets (Soketi/Pusher). It supports teams, channels, direct messages, mentions, notifications, threads, and simulated video calls.
+## Introduction
+
+Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, and Inertia.js. It provides a robust, scalable, and feature-rich environment for team communication, supporting channels, direct messages, threads, user mentions, and more, all delivered in real-time via WebSockets.
+
+## Key Objectives
+
+- **Develop a modern, real-time messaging application:** Build a platform for seamless team communication with instant message delivery.
+- **Support core collaboration features:** Implement essential functionalities like teams, channels, direct messages, threads, and user mentions.
+- **Ensure a scalable and robust architecture:** Utilize Laravel's backend capabilities, including queues for background processing and events for broadcasting.
+- **Deliver a fluid Single-Page Application (SPA) experience:** Use Vue.js and Inertia.js to create a responsive and interactive user interface without full page reloads.
+
+## Use Cases
+
+- **Team Collaboration:** Users can create or join teams to organize conversations and workflows.
+- **Topic-Based Discussions:** Within a team, users can create public or private channels for specific topics.
+- **Private Conversations:** Users can engage in one-on-one or small group conversations through Direct Messages (DMs).
+- **Real-Time Messaging:** Messages are sent and received instantly without needing to refresh the page.
+- **User Mentions:** Users can notify specific colleagues by mentioning them with `@username`, triggering a notification.
+- **Threaded Replies:** Users can reply to specific messages, creating organized threads to keep conversations focused.
+- **Simulated Video Calls:** Users can initiate a simulated video call from any chat window.
+
+---
+
+### High-Level Solution
+
+Xlack is designed as a monolithic application with a Single-Page Application (SPA) frontend. Laravel serves as the backend API, while Inertia.js acts as a bridge to a Vue.js frontend, providing a seamless user experience.
+
+- **Backend:** A standard Laravel application handles authentication, data persistence (MariaDB), and business logic.
+- **Frontend:** Vue.js components render the UI, managed by Inertia.js, which receives data directly from Laravel controllers.
+- **Real-Time Layer:** Laravel Echo, connected to a Soketi server, listens for broadcasted events (like new messages or notifications) and updates the UI in real-time.
+- **Background Processing:** Heavy or non-blocking tasks, such as parsing user mentions in a new message, are offloaded to a Redis-backed queue.
+
+### Flow Diagram: Message Sending
+
+This diagram illustrates the flow of a message from submission to real-time delivery.
+
+```mermaid
+graph TD
+  A[User submits message in UI] --> B{Controller};
+  B --> C[1. Save Message to DB];
+  B --> D[2. Dispatch ParseMentions Job];
+  C --> E{Broadcast NewMessageSent Event};
+  D -- Scans message & notifies user --> F[3. Process Job in Background];
+  E -- To all channel members --> G[4. WebSocket Server (Soketi)];
+  G --> H[Frontend receives event via Echo];
+  H --> I[UI updates in real time];
+```
+
+### Entity Diagram
+
+```mermaid
+erDiagram
+    User {
+        int id
+        string name
+        string email
+    }
+    Team {
+        int id
+        string name
+    }
+    Channel {
+        int id
+        string name
+        int team_id
+    }
+    DmGroup {
+        int id
+        string name
+    }
+    Message {
+        int id
+        text content
+        int user_id
+        int parent_message_id FK
+        string messageable_type
+        int messageable_id
+    }
+    Notification {
+        int id
+        string type
+        json data
+        int user_id
+    }
+
+    User ||--|{ Team : "belongs to many"
+    User ||--|{ Channel : "belongs to many"
+    User ||--|{ DmGroup : "belongs to many"
+    User ||--o{ Message : "sends"
+    User ||--o{ Notification : "receives"
+    Team ||--o{ Channel : "has many"
+    
+    Message }o--|| Channel : "can belong to"
+    Message }o--|| DmGroup : "can belong to"
+    Message }o--|| Message : "can be a reply to"
+```
+
+---
+
+## Epics and Tasks
+
+This is the high-level implementation plan used for Xlack, structured as Epics and Tasks:
+
+- **Epic 1: Project Setup & Auth**
+    - Task 1: Initialize Laravel, Sail, and Jetstream (Teams).
+    - Task 2: Configure MariaDB, Redis, and Soketi.
+    - Task 3: Set up Inertia.js, Vue 3, and TailwindCSS.
+    - Task 4: Implement basic authentication and team switching.
+
+- **Epic 2: Channels & DMs**
+    - Task 1: Implement Channel CRUD (create, list, join).
+    - Task 2: Implement Direct Messages (DMs) between users.
+    - Task 3: Build the sidebar for channel and DM navigation.
+
+- **Epic 3: Real-Time Messaging**
+    - Task 1: Create Message model, controller, and database schema.
+    - Task 2: Configure real-time broadcasting with Echo & Soketi.
+    - Task 3: Develop the message input and display UI components.
+
+- **Epic 4: Mentions & Notifications**
+    - Task 1: Implement logic to parse `@mentions` in messages.
+    - Task 2: Create a notification system (database and broadcast channels).
+    - Task 3: Use a background job to handle mention parsing asynchronously.
+
+- **Epic 5: Threads (Replies)**
+    - Task 1: Adapt the `messages` table to support threaded replies (`parent_message_id`).
+    - Task 2: Develop the thread modal and UI for viewing replies.
+    - Task 3: Create API endpoints for fetching and creating thread replies.
+
+- **Epic 6: Simulated Video Calls**
+    - Task 1: Design and build the video call modal UI.
+    - Task 2: Integrate the call initiation button into the chat window.
+    - Task 3: Simulate call events in the UI (no real WebRTC integration).
+
+- **Epic 7: Polish & Documentation**
+    - Task 2: Implement scripts or commands for cleaning demo data.
+    - Task 3: Write a comprehensive technical README.
+
+---
 
 ## Technical Stack
 - **Backend:** PHP 8.2+, Laravel 11, Laravel Sail (Docker), MariaDB, Redis
@@ -8,18 +146,11 @@ Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11
 - **Realtime:** Laravel Echo, Soketi/Pusher
 - **Authentication:** Jetstream (Inertia, Teams)
 
-## Architecture
-- Laravel monolith + Inertia (SPA)
-- Polymorphic messages: can belong to channels or DMs
-- Threads supported via `parent_message_id` in `messages`
-- Notifications and mentions with jobs and broadcasting
-- Video call simulation via modal (UI)
-
 ## Installation and Setup
 
 1. **Clone the repository:**
 	```bash
-	git clone <repo-url> xlack
+	git clone https://github.com/alexisbanda/xlack.git
 	cd xlack
 	```
 2. **Copy and edit the environment file:**
@@ -27,13 +158,13 @@ Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11
 	cp .env.example .env
 	# Edit variables if needed (port, DB, etc)
 	```
-3. **Install dependencies:**
+3. **Install dependencies and start services:**
 	```bash
 	./vendor/bin/sail up -d
 	./vendor/bin/sail composer install
 	./vendor/bin/sail npm install && ./vendor/bin/sail npm run build
 	```
-4. **Migrate the database:**
+4. **Run database migrations:**
 	```bash
 	./vendor/bin/sail artisan migrate
 	```
@@ -41,158 +172,18 @@ Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11
 	```bash
 	./vendor/bin/sail artisan db:seed
 	```
-6. **Start services:**
-	```bash
-	./vendor/bin/sail up -d
-	./vendor/bin/sail artisan queue:work --queue=default --tries=1
-	# (In another terminal) ./vendor/bin/sail artisan websockets:serve
-	```
+6. **Start background workers:**
+	- **Queue Worker:**
+		```bash
+		./vendor/bin/sail artisan queue:work --queue=default --tries=1
+		```
+	- **WebSocket Server:**
+		```bash
+		./vendor/bin/sail artisan reverb:start --host=0.0.0.0
+		```
 7. **Access the app:**
 	- http://localhost
 
-## Features and Manual Testing
-- **Login/Registration:** Jetstream (Inertia, Teams)
-- **Channels:** Create, list, send messages
-- **DMs:** Start and chat privately
-- **Real-time messaging:** Echo + Soketi
-- **Mentions:** Use @name, notifies the user
-- **Threads:** Reply in thread, view and navigate threads
-- **Video call (simulated):** Button and UI modal
-
-## Folder Structure
-- `app/Models/` — Eloquent models
-- `app/Http/Controllers/` — Main controllers
-- `resources/js/Components/` — Vue components (Sidebar, ChatWindow, ThreadView, VideoCallModal)
-- `routes/web.php` — Main routes
-- `database/migrations/` — Database migrations
-
-## Technical Notes
-
-## Message Sending Flow Diagram
-
-Below is a simplified flowchart of how a message is sent, processed with a Job, and broadcasted with an Event in Xlack:
-
-```mermaid
-graph TD
-	A[User submits message in UI] --> B[Controller stores message in DB]
-	B --> C[Dispatch ParseMentions Job]
-	C --> D[ParseMentions Job processes mentions]
-	D --> E[Broadcast NewMessageSent Event]
-	E --> F[Frontend receives event via Echo]
-	F --> G[UI updates in real time]
-```
-
-**Description:**
-- The user sends a message from the chat UI.
-- The backend controller saves the message and dispatches a `ParseMentions` Job.
-- The Job parses mentions and triggers notifications.
-- The `NewMessageSent` Event is broadcasted.
-- The frontend (Vue/Echo) receives the event and updates the chat in real time.
-
 ---
 
-## Implementation Plan (Epics/Tasks)
-
-This is the high-level implementation plan used for Xlack, structured as Epics and Tasks:
-
-### Epic 1: Project Setup & Auth
-- Initialize Laravel + Sail + Jetstream (Teams)
-- Configure MariaDB, Redis, Soketi
-- Set up Inertia.js, Vue 3, TailwindCSS
-- Basic authentication and team switching
-
-### Epic 2: Channels & DMs
-- Channel CRUD (create, list, join)
-- Direct messages (DMs) between users
-- Channel/DM sidebar navigation
-
-### Epic 3: Real-Time Messaging
-- Message model, controller, and DB
-- Real-time messaging with Echo & Soketi
-- Message input and display UI
-
-### Epic 4: Mentions & Notifications
-- Parse @mentions in messages
-- Notification system (database + broadcast)
-- Background job for mention parsing
-
-### Epic 5: Threads (Replies)
-- Threaded messages (parent_message_id)
-- Thread modal/view UI
-- API for thread replies
-
-### Epic 6: Simulated Video Calls
-- Video call modal UI
-- Integrate with chat window
-- Simulate call events (no real video)
-
----
-## Manual Testing
-- Test login, registration, team switching.
-- Create channels, send messages, test real-time updates.
-- Mention users with @name and verify notifications.
-- Test threads (reply in thread, view replies).
-- Test DMs and video call simulation.
-
----
-
-**Developed by TechNova Solutions.** - Christian Banda
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Developed by Christian Banda.**

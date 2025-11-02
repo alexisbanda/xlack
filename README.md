@@ -38,14 +38,14 @@ This diagram illustrates the flow of a message from submission to real-time deli
 
 ```mermaid
 graph TD
-  A[User submits message in UI] --> B{Controller};
-  B --> C[1. Save Message to DB];
-  B --> D[2. Dispatch ParseMentions Job];
-  C --> E{Broadcast NewMessageSent Event};
-  D -- Scans message & notifies user --> F[3. Process Job in Background];
-  E -- To all channel members --> G[4. WebSocket Server (Soketi)];
-  G --> H[Frontend receives event via Echo];
-  H --> I[UI updates in real time];
+  A["User submits message in UI"] --> B{"Controller"};
+  B --> C["1. Save Message to DB"];
+  B --> D["2. Dispatch ParseMentions Job"];
+  C --> E{"Broadcast NewMessageSent Event"};
+  D -- "Scans message & notifies user" --> F["3. Process Job in Background"];
+  E -- "To all channel members" --> G["4. WebSocket Server (Soketi)"];
+  G --> H["Frontend receives event via Echo"];
+  H --> I["UI updates in real time"];
 ```
 
 ### Entity Diagram

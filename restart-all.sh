@@ -1,26 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🔄 Reiniciando ambiente de Xlack..."
+echo "🔄 Restarting Xlack environment..."
 echo ""
 
-# Reiniciar contenedores
-echo "🐳 Reiniciando contenedores Docker..."
-cd /home/alexis/Sites/xlack/xlack
+# Work from repository root regardless of where it's called
+cd "$(dirname "$0")"
+
+echo "🐳 Restarting Docker containers..."
 docker compose restart
 
-# Esperar a que los contenedores estén listos
-echo "⏳ Esperando a que los servicios estén listos..."
+echo "⏳ Waiting for services to be ready..."
 sleep 5
 
-# Iniciar servicios internos
 echo ""
 ./start-services.sh
 
 echo ""
-echo "✅ Ambiente reiniciado completamente"
+echo "✅ Environment fully restarted"
 echo ""
-echo "🌐 URLs disponibles:"
-echo "   - Aplicación: http://localhost"
+echo "🌐 URLs:"
+echo "   - App:              http://localhost"
 echo "   - Reverb WebSocket: http://localhost:8080"
-echo "   - Soketi: http://localhost:6001"
+echo "   - Soketi:           http://localhost:6001"
 echo ""

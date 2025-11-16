@@ -177,23 +177,78 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 2. **Copy and edit the environment file:**
 	```bash
 	cp .env.example .env
-	# Edit variables if needed (port, DB, etc)
+	# Edit variables if needed (ports, DB, broadcasting)
 	```
+   Minimal .env settings for local development with Sail + Soketi:
+
+   ```dotenv
+   APP_NAME=Xlack
+   APP_URL=http://localhost
+
+   # Database
+   DB_CONNECTION=mysql
+   DB_HOST=mariadb
+   DB_PORT=3306
+   DB_DATABASE=xlack
+   DB_USERNAME=sail
+   DB_PASSWORD=password
+
+   # Queues
+   QUEUE_CONNECTION=database
+
+   # Broadcasting via Soketi (Pusher protocol)
+   BROADCAST_CONNECTION=pusher
+   PUSHER_APP_ID=xlack
+   PUSHER_APP_KEY=app-key
+   PUSHER_APP_SECRET=app-secret
+   PUSHER_APP_CLUSTER=mt1
+   PUSHER_HOST=localhost
+   PUSHER_PORT=6001
+   PUSHER_SCHEME=http
+
+   # Frontend (Echo / Pusher)
+   VITE_PUSHER_APP_KEY=${PUSHER_APP_KEY}
+   VITE_PUSHER_APP_CLUSTER=${PUSHER_APP_CLUSTER}
+   VITE_PUSHER_HOST=${PUSHER_HOST}
+   VITE_PUSHER_PORT=${PUSHER_PORT}
+   VITE_PUSHER_SCHEME=${PUSHER_SCHEME}
+
+   # Reverb (optional if you prefer Laravel Reverb)
+   # REVERB_APP_ID=xlack
+   # REVERB_APP_KEY=reverb-key
+   # REVERB_APP_SECRET=reverb-secret
+   # REVERB_HOST=localhost
+   # REVERB_PORT=8080
+   # REVERB_SCHEME=http
+   ```
 3. **Install dependencies and start services:**
 	```bash
 	./vendor/bin/sail up -d
 	./vendor/bin/sail composer install
-	./vendor/bin/sail npm install && ./vendor/bin/sail npm run build
+	./vendor/bin/sail npm install
 	```
-4. **Run database migrations:**
+4. **Generate app key:**
+	```bash
+	./vendor/bin/sail artisan key:generate
+	```
+5. **Run database migrations:**
 	```bash
 	./vendor/bin/sail artisan migrate
 	```
-5. **(Optional) Seed example data (recommended for local development):**
+6. **(Optional) Seed example data (recommended for local development):**
 	```bash
 	./vendor/bin/sail artisan db:seed
 	```
-6. **Start background workers (choose one):**
+7. **Build frontend assets or run dev server:**
+    - Build once (production):
+        ```bash
+        ./vendor/bin/sail npm run build
+        ```
+    - Dev server with HMR (recommended while developing):
+        ```bash
+        ./vendor/bin/sail npm run dev
+        ```
+8. **Start background workers (choose one):**
     - Option A — Convenience script (recommended):
         ```bash
         ./start-services.sh
@@ -207,7 +262,7 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
             ```bash
             ./vendor/bin/sail artisan reverb:start --host=0.0.0.0 --port=8080
             ```
-7. **Access the app:**
+9. **Access the app:**
     - App: http://localhost
     - Reverb WebSocket: http://localhost:8080
     - Soketi (metrics): http://localhost:6001
@@ -225,7 +280,7 @@ To recreate data: `./vendor/bin/sail artisan migrate:fresh --seed`
 ### Useful scripts
 
 - `./start-services.sh`
-    - Stops any previous Reverb/Queue processes inside the container, fixes permissions for `storage` and `bootstrap/cache`, and starts:
+    - Ensures containers are up, stops any previous Reverb/Queue processes, fixes permissions for `storage` and `bootstrap/cache`, and starts:
         - Reverb at `0.0.0.0:8080`
         - Queue worker via `queue:work` (queue `default`, `--tries=1`)
     - Shows the status of containers and active processes.

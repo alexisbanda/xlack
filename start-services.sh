@@ -1,36 +1,44 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🚀 Iniciando servicios de Xlack..."
+echo "🚀 Starting Xlack background services..."
 
-# Detener procesos existentes si los hay
-echo "🛑 Deteniendo procesos existentes..."
-docker exec xlack-laravel.test-1 pkill -f "reverb:start" 2>/dev/null || true
-docker exec xlack-laravel.test-1 pkill -f "queue:work" 2>/dev/null || true
+# Always run from repository root (directory containing this script)
+cd "$(dirname "$0")"
 
-# Corregir permisos
-echo "🔧 Corrigiendo permisos..."
-docker exec xlack-laravel.test-1 chown -R sail:sail /var/www/html/storage /var/www/html/bootstrap/cache
-docker exec xlack-laravel.test-1 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Ensure containers are up
+./vendor/bin/sail up -d
 
-# Iniciar Reverb como usuario sail
-echo "▶️  Iniciando Reverb WebSocket Server..."
-docker exec -u sail -d xlack-laravel.test-1 php artisan reverb:start --host=0.0.0.0 --port=8080
+# Resolve the container ID for the laravel service (robust across project names)
+CID=$(docker compose ps -q laravel.test)
+if [[ -z "${CID}" ]]; then
+	echo "❌ Could not resolve laravel.test container. Is Docker running?" >&2
+	exit 1
+fi
 
-# Iniciar Queue Worker como usuario sail
-echo "▶️  Iniciando Queue Worker..."
-docker exec -u sail -d xlack-laravel.test-1 php artisan queue:work --queue=default --tries=1
+echo "🛑 Stopping existing Reverb/Queue processes (if any)..."
+docker exec "${CID}" bash -lc "pkill -f 'reverb:start' || true; pkill -f 'queue:work' || true"
+
+echo "🔧 Fixing permissions..."
+docker exec "${CID}" bash -lc "chown -R sail:sail /var/www/html/storage /var/www/html/bootstrap/cache && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache"
+
+echo "▶️  Starting Reverb WebSocket server (detached)..."
+docker exec -u sail -d "${CID}" php artisan reverb:start --host=0.0.0.0 --port=8080
+
+echo "▶️  Starting Queue worker (detached)..."
+docker exec -u sail -d "${CID}" php artisan queue:work --queue=default --tries=1
 
 sleep 2
 
 echo ""
-echo "✅ Servicios iniciados correctamente"
+echo "✅ Services started"
 echo ""
-echo "📋 Estado de los servicios:"
-docker ps --format "table {{.Names}}\t{{.Status}}"
+echo "📋 Containers:"
+docker compose ps
 echo ""
-echo "🔄 Procesos en ejecución:"
-docker exec xlack-laravel.test-1 ps aux | grep -E "reverb|queue" | grep -v grep
+echo "🔄 Running processes inside laravel container:"
+docker exec "${CID}" bash -lc "ps aux | grep -E 'reverb|queue' | grep -v grep || true"
 echo ""
-echo "🌐 Aplicación disponible en: http://localhost"
+echo "🌐 App:              http://localhost"
 echo "🔌 Reverb WebSocket: http://localhost:8080"
-echo "📡 Soketi: http://localhost:6001"
+echo "📡 Soketi:           http://localhost:6001"

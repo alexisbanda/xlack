@@ -2,28 +2,28 @@
 
 ## Introduction
 
-Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, and Inertia.js. It provides a robust, scalable, and feature-rich environment for team communication, supporting channels, direct messages, threads, user mentions, and more, all delivered in real-time via WebSockets.
+Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, and Inertia.js. It provides a robust, scalable, and feature-rich environment for team communication, supporting channels, direct messages, threads, user mentions, and more — all delivered in real time via WebSockets.
 
-## Últimos cambios (Nov 2025)
+## Latest changes (Nov 2025)
 
-- Base de datos y seeders:
-    - Nuevo seeder `AdminUserSeeder` que garantiza la existencia de un usuario administrador por defecto: `admin@xlack.com` (contraseña: `admin123`) con equipo personal creado automáticamente.
-    - `DatabaseSeeder` ahora:
-        - Crea un usuario de prueba `test@example.com` con equipo personal (contraseña: `password`).
-        - Crea el canal `#general` en el primer equipo disponible, agrega al usuario de prueba y publica un mensaje de bienvenida.
-        - Ejecuta `AdminUserSeeder` al final del seeding.
-- Threads (respuestas):
-    - Nueva migración `2025_11_11_153201_add_parent_message_id_to_messages_table.php` que añade `parent_message_id` a la tabla `messages` para soportar hilos.
-- Realtime/WebSockets y entorno local:
-    - `compose.yaml` ahora expone el puerto `8080` para Reverb (`${REVERB_PORT:-8080}:8080`).
-    - Nuevos scripts de conveniencia:
-        - `start-services.sh`: inicia Reverb y el Queue Worker dentro del contenedor (como usuario `sail`).
-        - `restart-all.sh`: reinicia los contenedores y luego arranca los servicios internos.
-    - Puertos locales relevantes: App `http://localhost`, Reverb `http://localhost:8080`, Soketi `http://localhost:6001`.
+- Database and seeders:
+    - New `AdminUserSeeder` ensures a default admin user exists: `admin@xlack.com` (password: `admin123`) with a personal team created automatically.
+    - `DatabaseSeeder` now:
+        - Creates a test user `test@example.com` with a personal team (password: `password`).
+        - Creates the `#general` channel in the first available team, adds the test user, and posts a welcome message.
+        - Runs `AdminUserSeeder` at the end of seeding.
+- Threads (replies):
+    - New migration `2025_11_11_153201_add_parent_message_id_to_messages_table.php` adds `parent_message_id` to the `messages` table to support threaded replies.
+- Realtime/WebSockets and local environment:
+    - `compose.yaml` now exposes port `8080` for Reverb (`${REVERB_PORT:-8080}:8080`).
+    - New convenience scripts:
+        - `start-services.sh`: starts Reverb and the Queue Worker inside the container (as the `sail` user).
+        - `restart-all.sh`: restarts Docker containers and then starts internal services.
+    - Relevant local ports: App `http://localhost`, Reverb `http://localhost:8080`, Soketi `http://localhost:6001`.
 
 - Dashboard/Sidebar:
-    - Corregido un bug donde el sidebar mostraba todos los canales como `#general` cuando el usuario pertenecía a múltiples equipos. Ahora los canales del panel se filtran por el equipo activo y también se restringe la consulta del canal activo a dicho equipo.
-    - Cómo verificar: cambia de equipo (o asegura que pertenezcas a más de un equipo con un canal `#general`) y revisa que en el sidebar sólo aparezcan los canales del equipo actual con su nombre correcto.
+    - Fixed a bug where the sidebar showed all channels as `#general` when the user belonged to multiple teams. The dashboard channel list is now filtered by the active team, and the active-channel query is restricted to that team as well.
+    - How to verify: switch teams (or ensure you belong to more than one team each with a `#general` channel) and confirm the sidebar only shows channels for the current team with the correct names.
 
 ## Key Objectives
 
@@ -189,50 +189,50 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 	```bash
 	./vendor/bin/sail artisan migrate
 	```
-5. **(Optional) Seed example data (recommended para entorno local):**
+5. **(Optional) Seed example data (recommended for local development):**
 	```bash
 	./vendor/bin/sail artisan db:seed
 	```
-6. **Start background workers (elige una opción):**
-    - Opción A — Scripts de conveniencia (recomendado):
+6. **Start background workers (choose one):**
+    - Option A — Convenience script (recommended):
         ```bash
         ./start-services.sh
         ```
-    - Opción B — Comandos manuales:
-        - **Queue Worker:**
+    - Option B — Manual commands:
+        - **Queue worker:**
             ```bash
             ./vendor/bin/sail artisan queue:work --queue=default --tries=1
             ```
-        - **WebSocket Server (Reverb):**
+        - **WebSocket server (Reverb):**
             ```bash
             ./vendor/bin/sail artisan reverb:start --host=0.0.0.0 --port=8080
             ```
 7. **Access the app:**
-    - Aplicación: http://localhost
+    - App: http://localhost
     - Reverb WebSocket: http://localhost:8080
     - Soketi (metrics): http://localhost:6001
 
 ### Demo users and seeded data
 
-Al ejecutar `db:seed` se crean:
-- Usuario de prueba: `test@example.com` / contraseña: `password`
-- Usuario administrador: `admin@xlack.com` / contraseña: `admin123`
+Running `db:seed` creates:
+- Test user: `test@example.com` / password: `password`
+- Admin user: `admin@xlack.com` / password: `admin123`
 
-Además, se crea el canal `#general` en el primer equipo disponible y se publica un mensaje de bienvenida; el usuario de prueba queda agregado a dicho canal.
+Additionally, the `#general` channel is created in the first available team, a welcome message is posted, and the test user is added to that channel.
 
-Si necesitas recrear datos: `./vendor/bin/sail artisan migrate:fresh --seed`
+To recreate data: `./vendor/bin/sail artisan migrate:fresh --seed`
 
-### Scripts útiles
+### Useful scripts
 
 - `./start-services.sh`
-  - Detiene procesos previos de Reverb/Queue dentro del contenedor, corrige permisos de `storage` y `bootstrap/cache`, y levanta:
-    - Reverb en `0.0.0.0:8080`
-    - Queue Worker `queue:work` (cola `default`, `--tries=1`)
-  - Muestra estado de contenedores y procesos activos.
+    - Stops any previous Reverb/Queue processes inside the container, fixes permissions for `storage` and `bootstrap/cache`, and starts:
+        - Reverb at `0.0.0.0:8080`
+        - Queue worker via `queue:work` (queue `default`, `--tries=1`)
+    - Shows the status of containers and active processes.
 
 - `./restart-all.sh`
-  - Reinicia los contenedores de Docker Compose y luego ejecuta `start-services.sh`.
-  - Útil cuando hiciste cambios en `compose.yaml` o necesitas limpiar el estado de los servicios.
+    - Restarts the Docker Compose containers and then runs `start-services.sh`.
+    - Useful when you changed `compose.yaml` or need to reset the services state.
 
 ---
 

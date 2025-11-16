@@ -179,7 +179,7 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 	cp .env.example .env
 	# Edit variables if needed (ports, DB, broadcasting)
 	```
-   Minimal .env settings for local development with Sail + Soketi:
+    Minimal .env settings for local development with Sail + Soketi:
 
    ```dotenv
    APP_NAME=Xlack
@@ -196,20 +196,22 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
    # Queues
    QUEUE_CONNECTION=database
 
-   # Broadcasting via Soketi (Pusher protocol)
-   BROADCAST_CONNECTION=pusher
-   PUSHER_APP_ID=xlack
-   PUSHER_APP_KEY=app-key
-   PUSHER_APP_SECRET=app-secret
-   PUSHER_APP_CLUSTER=mt1
-   PUSHER_HOST=localhost
-   PUSHER_PORT=6001
-   PUSHER_SCHEME=http
+    # Broadcasting via Soketi (Pusher protocol)
+    # Note: server (Laravel) talks to Soketi via docker network hostname 'soketi'.
+    BROADCAST_CONNECTION=pusher
+    PUSHER_APP_ID=xlack
+    PUSHER_APP_KEY=app-key
+    PUSHER_APP_SECRET=app-secret
+    PUSHER_APP_CLUSTER=mt1
+    PUSHER_HOST=soketi
+    PUSHER_PORT=6001
+    PUSHER_SCHEME=http
 
-   # Frontend (Echo / Pusher)
+    # Frontend (Echo / Pusher)
    VITE_PUSHER_APP_KEY=${PUSHER_APP_KEY}
    VITE_PUSHER_APP_CLUSTER=${PUSHER_APP_CLUSTER}
-   VITE_PUSHER_HOST=${PUSHER_HOST}
+    # Browser connects via localhost port mapping
+    VITE_PUSHER_HOST=localhost
    VITE_PUSHER_PORT=${PUSHER_PORT}
    VITE_PUSHER_SCHEME=${PUSHER_SCHEME}
 

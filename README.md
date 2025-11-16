@@ -224,11 +224,25 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
    # REVERB_SCHEME=http
    ```
 3. **Install dependencies and start services:**
-	```bash
-	./vendor/bin/sail up -d
-	./vendor/bin/sail composer install
-	./vendor/bin/sail npm install
-	```
+    - First-time clone (no `vendor/` yet):
+        ```bash
+        # Install Composer dependencies via Sail's Composer image (no local PHP/Composer needed)
+        docker run --rm \
+          -u "$(id -u):$(id -g)" \
+          -v "$(pwd)":/opt \
+          -w /opt \
+          laravelsail/php82-composer:latest \
+          composer install --ignore-platform-reqs
+
+        ./vendor/bin/sail up -d
+        ./vendor/bin/sail npm install
+        ```
+    - If `vendor/` already exists:
+        ```bash
+        ./vendor/bin/sail up -d
+        ./vendor/bin/sail composer install
+        ./vendor/bin/sail npm install
+        ```
 4. **Generate app key:**
 	```bash
 	./vendor/bin/sail artisan key:generate
@@ -268,6 +282,11 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
     - App: http://localhost
     - Reverb WebSocket: http://localhost:8080
     - Soketi (metrics): http://localhost:6001
+
+> If you get port binding errors (80, 8080, 6001, 9601 already in use), stop any previous stack first:
+> ```bash
+> docker compose down
+> ```
 
 ### Demo users and seeded data
 

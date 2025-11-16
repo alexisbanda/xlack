@@ -6,9 +6,31 @@ use App\Models\Channel;
 use App\Models\Message;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class ChannelMessageController extends Controller
 {
+    /**
+     * List recent messages for a channel.
+     */
+    public function index(Request $request, Channel $channel): JsonResponse
+    {
+        // Ensure the authenticated user belongs to the channel
+        if (! $request->user()->channels()->whereKey($channel->id)->exists()) {
+            abort(403);
+        }
+
+        $messages = $channel->messages()
+            ->with('user:id,name')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        return response()->json(['data' => $messages]);
+    }
+
     /**
      * Store a newly created message in storage.
      */

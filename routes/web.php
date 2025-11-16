@@ -24,6 +24,9 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    // Mensajes en canales
+    Route::get('/channels/{channel}/messages', [ChannelMessageController::class, 'index'])
+        ->name('channels.messages.index');
     Route::post('/channels/{channel}/messages', [ChannelMessageController::class, 'store'])
         ->name('channels.messages.store');
 
@@ -33,6 +36,8 @@ Route::middleware([
 
     // Rutas de mensajes directos
     Route::get('/dm/{user}', [DmController::class, 'show'])->name('dm.show');
+    Route::get('/dm/{dmGroup}/messages', [DmMessageController::class, 'index'])
+        ->name('dm.messages.index');
     Route::post('/dm/{dmGroup}/messages', [DmMessageController::class, 'store'])
         ->name('dm.messages.store');
 });

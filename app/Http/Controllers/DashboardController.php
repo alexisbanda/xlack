@@ -38,8 +38,12 @@ class DashboardController extends Controller
             }
         }
 
-        // Cargar canales del usuario (solo id y nombre)
-        $channels = $user->channels()->select('channels.id', 'channels.name')->orderBy('name')->get();
+        // Cargar canales del usuario del equipo activo (solo id y nombre)
+        $channels = $user->channels()
+            ->when($team, fn ($q) => $q->where('channels.team_id', $team->id))
+            ->select('channels.id', 'channels.name')
+            ->orderBy('name')
+            ->get();
 
         // Cargar DMs del usuario (con el nombre del otro usuario)
         $dms = $user->dmGroups()->with(['users' => function ($q) use ($user) {
@@ -87,6 +91,7 @@ class DashboardController extends Controller
             $activeId = (int) $request->query('channel', $channels->first()->id);
             $activeChannel = Channel::query()
                 ->whereKey($activeId)
+                ->when($team, fn ($q) => $q->where('team_id', $team->id))
                 ->whereHas('users', fn ($q) => $q->whereKey($user->id))
                 ->with(['messages' => function ($q) {
                     $q->latest('id')->limit(50)->with('user:id,name');

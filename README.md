@@ -21,6 +21,10 @@ Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11
         - `restart-all.sh`: reinicia los contenedores y luego arranca los servicios internos.
     - Puertos locales relevantes: App `http://localhost`, Reverb `http://localhost:8080`, Soketi `http://localhost:6001`.
 
+- Dashboard/Sidebar:
+    - Corregido un bug donde el sidebar mostraba todos los canales como `#general` cuando el usuario pertenecía a múltiples equipos. Ahora los canales del panel se filtran por el equipo activo y también se restringe la consulta del canal activo a dicho equipo.
+    - Cómo verificar: cambia de equipo (o asegura que pertenezcas a más de un equipo con un canal `#general`) y revisa que en el sidebar sólo aparezcan los canales del equipo actual con su nombre correcto.
+
 ## Key Objectives
 
 - **Develop a modern, real-time messaging application:** Build a platform for seamless team communication with instant message delivery.

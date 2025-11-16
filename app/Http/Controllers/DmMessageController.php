@@ -7,9 +7,31 @@ use App\Events\NewMessageSent;
 use App\Jobs\ParseMentions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 class DmMessageController extends Controller
 {
+    /**
+     * List recent direct messages for a DM group.
+     */
+    public function index(Request $request, DmGroup $dmGroup): JsonResponse
+    {
+        // Verify that the authenticated user belongs to this DmGroup
+        if (! $dmGroup->users()->where('user_id', Auth::id())->exists()) {
+            abort(403);
+        }
+
+        $messages = $dmGroup->messages()
+            ->with('user:id,name')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        return response()->json(['data' => $messages]);
+    }
+
     /**
      * Store a new direct message.
      */

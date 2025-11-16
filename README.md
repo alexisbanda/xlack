@@ -4,6 +4,38 @@
 
 Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, and Inertia.js. It provides a robust, scalable, and feature-rich environment for team communication, supporting channels, direct messages, threads, user mentions, and more — all delivered in real time via WebSockets.
 
+## Quick start (TL;DR)
+
+1) Prerequisites: Docker (Compose v2)
+2) Clone and enter the folder:
+    ```bash
+    git clone https://github.com/alexisbanda/xlack.git
+    cd xlack
+    ```
+3) Create env:
+    ```bash
+    cp .env.example .env
+    ```
+4) First-time deps (no local PHP/Composer required):
+    ```bash
+    docker run --rm \
+      -u "$(id -u):$(id -g)" \
+      -v "$(pwd)":/opt \
+      -w /opt \
+      laravelsail/php82-composer:latest \
+      composer install --ignore-platform-reqs
+    ./vendor/bin/sail up -d
+    ./vendor/bin/sail npm install
+    ./vendor/bin/sail artisan key:generate
+    ./vendor/bin/sail artisan migrate --seed
+    ./vendor/bin/sail npm run dev
+    ```
+5) Background services (optional shortcut):
+    ```bash
+    ./start-services.sh
+    ```
+6) Open http://localhost
+
 ## Latest changes (Nov 2025)
 
 - Database and seeders:
@@ -179,11 +211,20 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 	cp .env.example .env
 	# Edit variables if needed (ports, DB, broadcasting)
 	```
-    Minimal .env settings for local development with Sail + Soketi:
+        Minimal .env settings for local development with Sail + Soketi:
 
    ```dotenv
-   APP_NAME=Xlack
-   APP_URL=http://localhost
+    APP_NAME=Xlack
+    APP_URL=http://localhost
+
+    # Laravel Sail runtime (prevent permissions issues and Docker warnings)
+    WWWUSER=1000
+    WWWGROUP=1000
+
+    # Exposed ports (change if needed)
+    APP_PORT=80
+    VITE_PORT=5173
+    REVERB_PORT=8080
 
    # Database
    DB_CONNECTION=mysql
@@ -287,6 +328,23 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 > ```bash
 > docker compose down
 > ```
+
+## Troubleshooting
+
+- Docker warnings: "The \"WWWUSER\"/\"WWWGROUP\" variable is not set"
+    - Ensure `.env` contains `WWWUSER` and `WWWGROUP` (default 1000 typically matches your Linux user).
+
+- Ports already in use (80, 8080, 6001, 9601)
+    - Stop prior stacks: `docker compose down`.
+    - Or change `APP_PORT`, `REVERB_PORT`, or Soketi ports in `compose.yaml`.
+
+- NPM dependency conflicts on first install
+    - The project is set up for Vite 7 and `@vitejs/plugin-vue` 6+. If you see peer dependency errors, ensure you ran `./vendor/bin/sail npm install` (inside the Sail container) with the current `package.json`.
+
+- WebSockets don’t connect
+    - Server (Laravel) uses `PUSHER_HOST=soketi` (Docker network). Browser uses `VITE_PUSHER_HOST=localhost` with port `6001`.
+    - Verify Soketi container is running: `docker compose ps`.
+    - Check `resources/js/bootstrap.js` Echo config and your `.env` values.
 
 ### Demo users and seeded data
 

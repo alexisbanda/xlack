@@ -4,6 +4,23 @@
 
 Xlack is a real-time messaging platform inspired by Slack, built with Laravel 11, Vue 3, and Inertia.js. It provides a robust, scalable, and feature-rich environment for team communication, supporting channels, direct messages, threads, user mentions, and more, all delivered in real-time via WebSockets.
 
+## Últimos cambios (Nov 2025)
+
+- Base de datos y seeders:
+    - Nuevo seeder `AdminUserSeeder` que garantiza la existencia de un usuario administrador por defecto: `admin@xlack.com` (contraseña: `admin123`) con equipo personal creado automáticamente.
+    - `DatabaseSeeder` ahora:
+        - Crea un usuario de prueba `test@example.com` con equipo personal (contraseña: `password`).
+        - Crea el canal `#general` en el primer equipo disponible, agrega al usuario de prueba y publica un mensaje de bienvenida.
+        - Ejecuta `AdminUserSeeder` al final del seeding.
+- Threads (respuestas):
+    - Nueva migración `2025_11_11_153201_add_parent_message_id_to_messages_table.php` que añade `parent_message_id` a la tabla `messages` para soportar hilos.
+- Realtime/WebSockets y entorno local:
+    - `compose.yaml` ahora expone el puerto `8080` para Reverb (`${REVERB_PORT:-8080}:8080`).
+    - Nuevos scripts de conveniencia:
+        - `start-services.sh`: inicia Reverb y el Queue Worker dentro del contenedor (como usuario `sail`).
+        - `restart-all.sh`: reinicia los contenedores y luego arranca los servicios internos.
+    - Puertos locales relevantes: App `http://localhost`, Reverb `http://localhost:8080`, Soketi `http://localhost:6001`.
+
 ## Key Objectives
 
 - **Develop a modern, real-time messaging application:** Build a platform for seamless team communication with instant message delivery.
@@ -168,21 +185,50 @@ This is the high-level implementation plan used for Xlack, structured as Epics a
 	```bash
 	./vendor/bin/sail artisan migrate
 	```
-5. **(Optional) Seed example data:**
+5. **(Optional) Seed example data (recommended para entorno local):**
 	```bash
 	./vendor/bin/sail artisan db:seed
 	```
-6. **Start background workers:**
-	- **Queue Worker:**
-		```bash
-		./vendor/bin/sail artisan queue:work --queue=default --tries=1
-		```
-	- **WebSocket Server:**
-		```bash
-		./vendor/bin/sail artisan reverb:start --host=0.0.0.0
-		```
+6. **Start background workers (elige una opción):**
+    - Opción A — Scripts de conveniencia (recomendado):
+        ```bash
+        ./start-services.sh
+        ```
+    - Opción B — Comandos manuales:
+        - **Queue Worker:**
+            ```bash
+            ./vendor/bin/sail artisan queue:work --queue=default --tries=1
+            ```
+        - **WebSocket Server (Reverb):**
+            ```bash
+            ./vendor/bin/sail artisan reverb:start --host=0.0.0.0 --port=8080
+            ```
 7. **Access the app:**
-	- http://localhost
+    - Aplicación: http://localhost
+    - Reverb WebSocket: http://localhost:8080
+    - Soketi (metrics): http://localhost:6001
+
+### Demo users and seeded data
+
+Al ejecutar `db:seed` se crean:
+- Usuario de prueba: `test@example.com` / contraseña: `password`
+- Usuario administrador: `admin@xlack.com` / contraseña: `admin123`
+
+Además, se crea el canal `#general` en el primer equipo disponible y se publica un mensaje de bienvenida; el usuario de prueba queda agregado a dicho canal.
+
+Si necesitas recrear datos: `./vendor/bin/sail artisan migrate:fresh --seed`
+
+### Scripts útiles
+
+- `./start-services.sh`
+  - Detiene procesos previos de Reverb/Queue dentro del contenedor, corrige permisos de `storage` y `bootstrap/cache`, y levanta:
+    - Reverb en `0.0.0.0:8080`
+    - Queue Worker `queue:work` (cola `default`, `--tries=1`)
+  - Muestra estado de contenedores y procesos activos.
+
+- `./restart-all.sh`
+  - Reinicia los contenedores de Docker Compose y luego ejecuta `start-services.sh`.
+  - Útil cuando hiciste cambios en `compose.yaml` o necesitas limpiar el estado de los servicios.
 
 ---
 

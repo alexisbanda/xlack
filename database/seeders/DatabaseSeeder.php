@@ -41,5 +41,8 @@ class DatabaseSeeder extends Seeder
                 'body' => '¡Bienvenido al canal #general! 🎉',
             ]);
         }
+
+        // Ensure admin user exists
+        $this->call(AdminUserSeeder::class);
     }
 }
